@@ -13,11 +13,15 @@ all: proxy
 csapp.o: csapp.c csapp.h
 	$(CC) $(CFLAGS) -c csapp.c
 
-proxy.o: proxy.c csapp.h
+proxy.o: proxy.c csapp.h safe-wrappers.h
 	$(CC) $(CFLAGS) -c proxy.c
 
-proxy: proxy.o csapp.o
-	$(CC) $(CFLAGS) proxy.o csapp.o -o proxy $(LDFLAGS)
+# safe-wrappers.o를 생성하기 위한 규칙 추가
+safe-wrappers.o: safe-wrappers.c safe-wrappers.h csapp.h
+	$(CC) $(CFLAGS) -c safe-wrappers.c
+
+proxy: proxy.o csapp.o safe-wrappers.o
+	$(CC) $(CFLAGS) proxy.o csapp.o safe-wrappers.o -o proxy $(LDFLAGS)
 
 # Creates a tarball in ../proxylab-handin.tar that you can then
 # hand in. DO NOT MODIFY THIS!
