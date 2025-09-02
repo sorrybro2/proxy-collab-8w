@@ -5,12 +5,12 @@
             "name": "Debug Tiny Web Server",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/webproxy-lab/tiny/tiny",
+            "program": "${workspaceFolder}/sorrybro2/tiny/tiny",
             "args": [
                 "8000"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/webproxy-lab/tiny",
+            "cwd": "${workspaceFolder}/sorrybro2/tiny",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -49,19 +49,19 @@
                 // }
             ],
             "sourceFileMap": {
-                "/workspaces/webproxy_lab_docker": "${workspaceFolder}"
+                "/workspaces/proxy-collab-8w": "${workspaceFolder}"
             }
         },
         {
             "name": "Debug Proxy Server",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/webproxy-lab/proxy",
+            "program": "${workspaceFolder}/sorrybro2/proxy",
             "args": [
                 "4500"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/webproxy-lab",
+            "cwd": "${workspaceFolder}/sorrybro2",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
