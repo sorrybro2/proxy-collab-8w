@@ -6,6 +6,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     locales tzdata build-essential sudo gdb vim curl git wget \
     clang-format \
     python3 cmake make gcc sudo valgrind telnet net-tools iproute2\
+    clang-format\
     && locale-gen ko_KR.UTF-8 && update-locale LANG=ko_KR.UTF-8
 
 RUN useradd -m -s /bin/bash jungle && usermod -aG sudo jungle
