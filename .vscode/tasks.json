@@ -4,7 +4,7 @@
         {
             "label": "Tiny server build",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab/tiny && make",
+            "command": "cd ${workspaceFolder}/crucial-sub/tiny && make",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -17,20 +17,20 @@
                 "$gcc"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab/tiny"
+                "cwd": "${workspaceFolder}/crucial-sub/tiny"
             }
         },
         {
             "label": "Tiny server clean",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab/tiny && make clean",
+            "command": "cd ${workspaceFolder}/crucial-sub/tiny && make clean",
             "presentation": {
                 "reveal": "always",
                 "panel": "new"
             },
             "problemMatcher": [],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab/tiny"
+                "cwd": "${workspaceFolder}/crucial-sub/tiny"
             }
         },
         {
@@ -53,7 +53,7 @@
         {
             "label": "Proxy server build",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab && make",
+            "command": "cd ${workspaceFolder}/crucial-sub && make",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -66,20 +66,20 @@
                 "$gcc"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab"
+                "cwd": "${workspaceFolder}/crucial-sub"
             }
         },
         {
             "label": "Proxy server clean",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab && make clean",
+            "command": "cd ${workspaceFolder}/crucial-sub && make clean",
             "presentation": {
                 "reveal": "always",
                 "panel": "new"
             },
             "problemMatcher": [],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab"
+                "cwd": "${workspaceFolder}/crucial-sub"
             }
         },
         {
