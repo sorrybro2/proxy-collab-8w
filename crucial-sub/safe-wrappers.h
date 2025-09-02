@@ -13,3 +13,5 @@ int close_sw(int fd);
 ssize_t rio_writen_sw(int fd, const void *usrbuf, size_t n);
 ssize_t rio_readlineb_sw(rio_t *rp, void *usrbuf, size_t maxlen);
 ssize_t rio_readnb_sw(rio_t *rp, void *usrbuf, size_t n);
+
+void *malloc_sw(size_t size);

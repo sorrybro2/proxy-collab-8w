@@ -121,3 +121,44 @@ ssize_t rio_writen_sw(int fd, const void *usrbuf, size_t n) {
   }
   return bytes_written; // 성공: n, 실패: -1
 }
+
+/*
+ * [메모리] malloc()의 안전한 래퍼 함수
+ * 메모리 할당 실패 시 로그를 남기고 NULL을 반환
+ */
+void *malloc_sw(size_t size) {
+  void *p;
+  if ((p = malloc(size)) == NULL) {
+    log_perror("malloc_sw");
+  }
+  return p;
+}
+
+/*
+ * [쓰레드] pthread_create의 안전한 래퍼 함수
+ * 쓰레드 생성 실패 시 로그를 남기고 -1 반환
+ */
+int pthread_create_sw(pthread_t *tidp, pthread_attr_t *attrp,
+                      void *(*routine)(void *), void *argp) {
+  int rc = pthread_create(tidp, attrp, routine, argp);
+  if (rc != 0) {
+    errno = rc;
+    log_perror("pthread_create");
+    return -1;
+  }
+  return 0;
+}
+
+/*
+ * [쓰레드] pthread_detach 안전한 래퍼 함수
+ * 쓰레드 분리 실패 시 로그를 남기고 -1 반환
+ */
+int pthread_detach_sw(pthread_t tid) {
+  int rc = pthread_detach(tid);
+  if (rc != 0) {
+    errno = rc;
+    log_perror("Pthread_detach");
+    return -1;
+  }
+  return 0;
+}

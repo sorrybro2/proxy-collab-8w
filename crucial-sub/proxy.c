@@ -13,6 +13,7 @@
 #define HDR_CONNECTION "Connection:"
 #define HDR_PROXY_CONNECTION "Proxy-Connection:"
 
+void *thread(void *vargp);
 void doit(int fd);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg,
                  char *longmsg);
@@ -24,10 +25,11 @@ static const char *user_agent_hdr =
 static int parse_uri_proxy(const char *uri, char *host, char *port, char *path);
 
 int main(int argc, char **argv) {
-  int listenfd, connfd;
+  int listenfd, *connfd;
   char hostname[MAXLINE], port[MAXLINE];
   socklen_t clientlen;
   struct sockaddr_storage clientaddr;
+  pthread_t tid;
   /* 인자가 2개(프로그램 이름, 포트 번호)인지 확인 */
   if (argc != 2) {
     fprintf(stderr, "사용법: %s <port>\n", argv[0]);
@@ -42,16 +44,24 @@ int main(int argc, char **argv) {
   }
   for (;;) {
     clientlen = sizeof(clientaddr);
-    connfd = accept_sw(listenfd, (SA *)&clientaddr, &clientlen);
-    if (connfd < 0) {
+    connfd = malloc_sw(sizeof(int));
+    *connfd = accept_sw(listenfd, (SA *)&clientaddr, &clientlen);
+    if (*connfd < 0) {
+      free(connfd);
       continue; // 일시 오류 등은 다음 루프로
     }
-    getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE,
-                0);
-    printf("Accepted connection from (%s, %s)\n", hostname, port);
-    doit(connfd);
-    close_sw(connfd);
+    pthread_create_sw(&tid, NULL, thread, connfd);
+    pthread_detach_sw(tid);
   }
+}
+
+/* Thread routine */
+void *thread(void *vargp) {
+  int connfd = *((int *)vargp);
+  free(vargp);
+  doit(connfd);
+  close_sw(connfd);
+  return NULL;
 }
 
 void doit(int fd) {
@@ -128,7 +138,7 @@ void doit(int fd) {
   // 마지막 빈 줄 전송
   rio_writen_sw(serverfd, "\r\n", 2);
 
-  /* 서버로부터 응답받으면 일체의 수정 없이 그대로 클라이언트에게 전달 */
+  /* 4. 서버로부터 응답받으면 일체의 수정 없이 그대로 클라이언트에게 전달 */
   rio_t s_rio;
   rio_readinitb(&s_rio, serverfd);
   ssize_t n;
