@@ -1,5 +1,6 @@
 #include <stdio.h> // 표준 입출력 함수들 (printf, fprintf 등) 
 #include "csapp.h" // CS:APP 교재의 wrapper 함수들 (Open_listenfd, Accept, Rio 등)
+#include <pthread.h> // 멀티스레드 생성 동기화
 
 /* 캐시 최대 크기와 객체 최대 크기 정의 (문제 3에서 사용함) */ 
 #define MAX_CACHE_SIZE 1049000 // 캐시 최대 크기 정의 
