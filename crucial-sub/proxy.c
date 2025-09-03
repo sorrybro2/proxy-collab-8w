@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
 void doit(int fd) {
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
-  char host[MAXLINE], port[16], path[MAXLINE];
+  char host[MAXLINE], port[6], path[MAXLINE];
   char request_buf[MAXLINE];
   rio_t rio;
 
