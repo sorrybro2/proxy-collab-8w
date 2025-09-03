@@ -74,7 +74,7 @@ int main(int argc, char **argv) // 메인 함수 (argc = 인자개수, argv = �
   printf("Proxy server is running on port %s", argv[1]); // 프록시 서버 시작 메세지
 
   // 순차적 처리 (Iterative)
-  while(1){ // 무한 루프로 클라이언트 요청 대기기
+  while(1){ // 무한 루프로 클라이언트 요청 대기
     clientlen = sizeof(clientaddr); // 클라이언트 주소 구조체 크기 설정
     connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); // 클라이언트 연결 수락
 
@@ -83,7 +83,7 @@ int main(int argc, char **argv) // 메인 함수 (argc = 인자개수, argv = �
                 port, MAXLINE, // 포트 문자열 버퍼 + 그 크기
                 0); // 플래그 예: NI_NUMERICHOST, NI_NUMERICSERV
 
-    printf("Accepted connection from (%s, %s)\n", hostname, port); // 연결 정보 출력력
+    printf("Accepted connection from (%s, %s)\n", hostname, port); // 연결 정보 출력
     handle_request(connfd); // 요청 처리 함수 호출
     close(connfd); // 클라이언트 연결 종료
   }
@@ -152,7 +152,7 @@ void handle_request(int connfd) { // 클라이언트 소켓을 매개변수로 �
  * parse_url - URL을 파싱하여 host, port, path 추출
  * http://host[:port]/path 형태 또는 /path 형태 처리
  */
-int parse_url(char *url, char *host, char *port, char *path) { // URL 파싱 함수수
+int parse_url(char *url, char *host, char *port, char *path) { // URL 파싱 함수
   char *ptr; // 문자열 탐색용 포인터터
 
   // url이 http://로 시작하지 않으면 에러 반환
@@ -170,12 +170,12 @@ int parse_url(char *url, char *host, char *port, char *path) { // URL 파싱 함
     }else{ // /가 있으면
       strcpy(path, slash_pos); // / 포함함 값을 path로 복사
       *slash_pos = '\0'; // '/' 위치에 널 문자 삽입
-      strcpy(host, ptr); // host:port 부분을 ptr에에 복사
+      strcpy(host, ptr); // host:port 부분을 ptr에 복사
       *slash_pos = '/'; // 다시 '/'로 복귀
     }
 
     /* host에서 port 분리 */
-    char *colon_pos = strchr(host, ':'); // ':' 위치 찾기기
+    char *colon_pos = strchr(host, ':'); // ':' 위치 찾기
     if(colon_pos == NULL){ // :가 없으면
       // 포트가 없으면 기본값 80
       strcpy(port, "80");
