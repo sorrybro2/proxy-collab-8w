@@ -4,7 +4,7 @@
         {
             "label": "Tiny server build",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab/tiny && make",
+            "command": "cd ${workspaceFolder}/sorrybro2/tiny && make",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -17,20 +17,20 @@
                 "$gcc"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab/tiny"
+                "cwd": "${workspaceFolder}/sorrybro2/tiny"
             }
         },
         {
             "label": "Tiny server clean",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab/tiny && make clean",
+            "command": "cd ${workspaceFolder}/sorrybro2/tiny && make clean",
             "presentation": {
                 "reveal": "always",
                 "panel": "new"
             },
             "problemMatcher": [],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab/tiny"
+                "cwd": "${workspaceFolder}/sorrybro2/tiny"
             }
         },
         {
@@ -53,7 +53,7 @@
         {
             "label": "Proxy server build",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab && make",
+            "command": "cd ${workspaceFolder}/sorrybro2 && make",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -66,20 +66,20 @@
                 "$gcc"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab"
+                "cwd": "${workspaceFolder}/sorrybro2"
             }
         },
         {
             "label": "Proxy server clean",
             "type": "shell",
-            "command": "cd ${workspaceFolder}/webproxy-lab && make clean",
+            "command": "cd ${workspaceFolder}/sorrybro2 && make clean",
             "presentation": {
                 "reveal": "always",
                 "panel": "new"
             },
             "problemMatcher": [],
             "options": {
-                "cwd": "${workspaceFolder}/webproxy-lab"
+                "cwd": "${workspaceFolder}/sorrybro2"
             }
         },
         {
