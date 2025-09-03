@@ -48,7 +48,7 @@ void forward_request(int serverfd, char *method, char *path, char *headers, char
   host: Host 헤더에 사용할 호스트명 (입력)
 */
 
-void forward_response(int serverfd, int cilentfd);
+void forward_response(int serverfd, int clientfd);
 /*
   서버 응답을 클라이언트로 전달하는 함수
   serverfd: 원서버와 연결된 소켓 디스크립터 (입력 - 읽기용)
@@ -148,41 +148,140 @@ void handle_request(int connfd) { // 클라이언트 소켓을 매개변수로 �
   Close(serverfd);                    // 서버 연결 종료
 }
 
-// url: 요청 URL (예: http://host[:port]/path)
-parse_url(char *url, char *host, char *port, char *path) {
-char *ptr;
+/*
+ * parse_url - URL을 파싱하여 host, port, path 추출
+ * http://host[:port]/path 형태 또는 /path 형태 처리
+ */
+int parse_url(char *url, char *host, char *port, char *path) { // URL 파싱 함수수
+  char *ptr; // 문자열 탐색용 포인터터
 
   // url이 http://로 시작하지 않으면 에러 반환
-  if (strncasecmp(url, "http://", 7) != 0){
+  if (strncasecmp(url, "http://", 7) == 0){
+
+    // http:// 이후의 문자열 위치
+    ptr = url + 7;
+
+    /* path 따로 분리 */
+    char *slash_pos = strchr(ptr, '/'); // 첫 번째 '/' 위치 찾기
+    if (slash_pos == NULL){ // '/'가 없으면
+      // path가 없는 경우 "/"로 설정
+      strcpy(path, "/"); // 기본 path를 "/"로 설정
+      strcpy(host, ptr); // 나머지 전체를 host로 복사
+    }else{ // /가 있으면
+      strcpy(path, slash_pos); // / 포함함 값을 path로 복사
+      *slash_pos = '\0'; // '/' 위치에 널 문자 삽입
+      strcpy(host, ptr); // host:port 부분을 ptr에에 복사
+      *slash_pos = '/'; // 다시 '/'로 복귀
+    }
+
+    /* host에서 port 분리 */
+    char *colon_pos = strchr(host, ':'); // ':' 위치 찾기기
+    if(colon_pos == NULL){ // :가 없으면
+      // 포트가 없으면 기본값 80
+      strcpy(port, "80");
+    }else{ // ':' 가 있으면
+      strcpy(port, colon_pos + 1); // port에 ':' 이후 값 복사
+      *colon_pos = '\0'; // ':' 위치에 널 문자 삽입
+    }
+  }
+  else if (url[0] == '/') {
+    // 상대 URL: /path 형태 - 에러 메시지와 함께 거부
+    printf("Relative URL not supported in proxy mode: %s\n", url);
+    printf("Please use absolute URL like: http://example.com/path\n");
     return -1;
   }
-
-  // http:// 이후의 문자열 위치
-  ptr = url + 7;
-
-  /* path 따로 분리 */
-  char *slash_pos = strchr(ptr, '/'); // 첫 번째 '/' 위치 찾기
-  if (slash_pos == NULL){ // '/'가 없으면
-     // path가 없는 경우 "/"로 설정
-    strcpy(path, '/'); // 기본 path를 "/"로 설정
-    strcpy(host, ptr); // 나머지 전체를 host로 복사
-  }else{ // /가 있으면
-    strcpy(path, slash_pos); // / 이후 값을 path로 복사
-    *slash_pos = '\0'; // '/' 위치에 널 문자 삽입
-    strcpy(host, ptr); // host:port 부분을 ptr에에 복사
-    *slash_pos = '/'; // 다시 '/'로 복귀
-  }
-
-  /* host에서 port 분리 */
-  char *colon_pos = strchr(host, ':'); // ':' 위치 찾기기
-  if(colon_pos == NULL){ // :가 없으면
-    // 포트가 없으면 기본값 80
-    strcpy(port, "80");
-  }else{ // ':' 가 있으면
-    strcpy(port, colon_pos); // port에 ':' 이후 값 복사
-    *colon_pos = '\0'; // ':' 위치에 널 문자 삽입
+  else {
+    // 잘못된 URL 형태
+    printf("Invalid URL format: %s\n", url);
+    return -1;
   }
 
   printf("Parsed URL - Host : %s, Port : %s, Path : %s\n", host, port, path); // 파싱 결과
   return 0; // 성공 반환!
+}
+
+/*
+ * collect_headers - 클라이언트 헤더를 수집하고 필터링
+ */
+void collect_headers(rio_t *rio, char *headers, char *host_header) { // 헤더 수집 함수
+  char buf[MAXLINE]; // 한 줄씩 읽는 버퍼
+
+  headers[0] = '\0';
+  host_header[0] = '\0';
+
+  // 헤더를 한 줄씩 읽기
+  while (Rio_readlineb(rio, buf, MAXLINE) > 0) { // 헤더 한 줄씩 읽기
+      if (strcmp(buf, "\r\n") == 0) { // 빈 줄이면
+        break; // 그만 읽거라 루프 종료
+      }
+
+      if (strncasecmp(buf, "Host:", 5) == 0){ // Host: 로 시작하면
+        strcpy(host_header, buf); // host_header에 따로 저장
+      }
+      // 우리가 강제로 설정할 헤더들은 무시
+      else if(strncasecmp(buf, "User-Agent:", 11) != 0 && 
+              strncasecmp(buf, "Connection:", 11) != 0 &&
+              strncasecmp(buf, "Proxy-Connection:", 17) != 0)
+      {
+        /*
+          "User-Agent:", "Connection:", "Proxy-Connection:"
+          를 제외한 나머지 헤더는 그대로 저장
+        */ 
+        strcat(headers, buf); // headers 문자열에 이어붙이기
+      }
+  }
+}
+
+/*
+ * forward_request - 원서버에 요청 전달
+ */
+void forward_request(int serverfd, char *method, char *path, char *headers, char *host) {
+  char request[MAXLINE]; // 요청 메세지 작성용 버퍼
+
+  // 요청라인 : Get /path HTTP/1.0
+  sprintf(request, "%s %s HTTP/1.0\r\n", method, path);  // HTTP/1.0 요청라인 작성
+  Rio_writen(serverfd, request, strlen(request));        // 서버로 전송
+
+  // Host 헤더
+  sprintf(request, "Host: %s\r\n", host);  // Host 헤더 작성
+  Rio_writen(serverfd, request, strlen(request));  // 서버로 전송
+
+  // User-Agent 헤더 (고정)
+  Rio_writen(serverfd, (void *)user_agent_hdr, strlen(user_agent_hdr));  // 고정 User-Agent 전송
+
+  // Connection 헤더
+  sprintf(request, "Connection: close\r\n");  // Connection: close 헤더 작성
+  Rio_writen(serverfd, request, strlen(request));  // 서버로 전송
+
+  // Proxy-Connection 헤더
+  sprintf(request, "Proxy-Connection: close\r\n");  // Proxy-Connection: close 헤더 작성
+  Rio_writen(serverfd, request, strlen(request));   // 서버로 전송
+
+  // 나머지 헤더들
+  if (strlen(headers) > 0) {          // 추가 헤더가 있으면
+    Rio_writen(serverfd, headers, strlen(headers));  // 나머지 헤더들도 전송
+  }
+
+  // 헤더 종료 (빈 줄)
+  Rio_writen(serverfd, "\r\n", 2);   // 헤더 끝을 알리는 빈 줄 전송
+    
+  printf("Request forwarded to server\n");  // 요청 전달 완료 메시지
+}
+
+/*
+ * forward_response - 서버 응답을 클라이언트에 그대로 전달
+ */
+ void forward_response(int serverfd, int clientfd) {  // 응답 중계 함수
+  char buf[MAXLINE];                  // 데이터 읽기용 버퍼
+  ssize_t n;                          // 읽은 바이트 수
+  rio_t rio;                          // Rio I/O 구조체
+  
+  Rio_readinitb(&rio, serverfd);      // Rio를 서버 소켓으로 초기화
+  
+  // 서버로부터 읽은 데이터를 클라이언트에 그대로 전달
+  while ((n = Rio_readlineb(&rio, buf, MAXLINE)) > 0) {  // 서버에서 한 줄씩 읽기
+      Rio_writen(clientfd, buf, n);   // 읽은 데이터를 클라이언트에 그대로 쓰기
+  }
+  
+  printf("Response forwarded to client\n");  // 응답 전달 완료 메시지
 }
