@@ -1,7 +1,17 @@
 #include "csapp.h"
 
-// #define MAX_CACHE_SIZE 1049000
-// #define MAX_OBJECT_SIZE 102400
+#define MAX_CACHE_SIZE 1049000
+#define MAX_OBJECT_SIZE 102400
+
+/* 필수 헤더 4가지 */
+#define HDR_HOST "Host:"
+#define HDR_AGENT "User-Agent:"
+#define HDR_CONN "Connection:"
+#define HDR_PROXY_CONN "Proxy-Connection:"
+
+static const char *user_agent_hdr =
+    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 "
+    "Firefox/10.0.3\r\n";
 
 typedef struct {
   char host[MAXLINE];
@@ -9,42 +19,75 @@ typedef struct {
   char uri[MAXLINE];
 } end_server_info;
 
-static const char *user_agent_hdr =
-    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 "
-    "Firefox/10.0.3\r\n";
+void *thread(void *vargp);
+void doit(int connfd);
+int init_listen(int listenfd);
+void read_request(int connfd, char *buf);
+int parse_request(char *method, char *buf, end_server_info *end_server, int fd);
+int send_request_end(int connfd, char *method, end_server_info *end_server);
+void send_response_client(int connfd, int clientfd);
+void proxy_error(int fd, char *cause, char *errnum, char *shortmsg,
+                 char *longmsg);
 
 int main(int argc, char **argv) {
 
-  int listenfd, connfd, clientfd;
-  end_server_info end_server;
-  char request_buf[MAXLINE], method[MAXLINE];
+  int listenfd, *connfdp;
+  socklen_t clientlen;
+  struct sockaddr_storage clientaddr;
+  pthread_t tid;
 
   if (argc != 2) {
     fprintf(stderr, "usage: %s <port>\n", argv[0]);
     exit(1);
   }
 
+  // 클라이언트가 먼저 끊어도 프로세스가 안 죽게
+  Signal(SIGPIPE, SIG_IGN);
+
   listenfd = Open_listenfd(argv[1]);
+  if (listenfd < 0) {
+    fprintf(stderr, "listenfd: %d\n", listenfd);
+    exit(1);
+  }
   while (1) {
-    connfd = init_listen(listenfd);
-    read_request(connfd, request_buf);
-    parse_request(method, request_buf, &end_server, connfd);
-    int clientfd = send_request_end(connfd, method, &end_server);
-    if (clientfd > 0) {
-      send_response_client(connfd, clientfd);
+    clientlen = sizeof(struct sockaddr_storage);
+    int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
+    if (connfd < 0) {
+      continue;
     }
-    Close(clientfd);
-    Close(connfd);
+    connfdp = Malloc(sizeof(int));
+    *connfdp = connfd;
+    Pthread_create(&tid, NULL, thread, connfdp);
   }
   return 0;
 }
 
-/* 1. 클라이언트 연결 */
-int init_listen(int listenfd) {
-  struct sockaddr_storage clientaddr;
-  socklen_t clientlen = sizeof(clientaddr);
-  return Accept(listenfd, (SA *)&clientaddr, &clientlen);
+void *thread(void *vargp) {
+  int connfd = *((int *)vargp);
+  Pthread_detach(pthread_self());
+  Free(vargp);
+  doit(connfd);
+  Close(connfd);
 }
+
+void doit(int connfd) {
+  end_server_info end_server;
+  char request_buf[MAXLINE], method[MAXLINE];
+  read_request(connfd, request_buf);
+  parse_request(method, request_buf, &end_server, connfd);
+  int clientfd = send_request_end(connfd, method, &end_server);
+  if (clientfd > 0) {
+    send_response_client(connfd, clientfd);
+  }
+  Close(clientfd);
+}
+
+/* 1. 클라이언트 연결 */
+// int init_listen(int listenfd) {
+//   struct sockaddr_storage clientaddr;
+//   socklen_t clientlen = sizeof(clientaddr);
+//   return Accept(listenfd, (SA *)&clientaddr, &clientlen);
+// }
 
 /* 2. 클라이언트 요청 읽기 */
 void read_request(int connfd, char *buf) {
@@ -66,7 +109,7 @@ int parse_request(char *method, char *buf, end_server_info *end_server,
     return -1;
   }
 
-  memset(end_server, 0, sizeof(end_server));
+  memset(end_server, 0, sizeof(*end_server));
 
   // 절대주소/상대주소
   if ((p = strstr(url, "://")) != NULL) {
@@ -80,14 +123,12 @@ int parse_request(char *method, char *buf, end_server_info *end_server,
   // host
   snprintf(end_server->host, sizeof end_server->host, "%.*s",
            (int)(port - host), host);
-
   // port
   if (uri) {
     snprintf(end_server->port, sizeof end_server->port, "%.*s",
              (int)(uri - (port + 1)), port + 1);
   } else {
-    snprintf(end_server->port, sizeof end_server->port, "%s",
-             (int)(uri - (port + 1)), port + 1);
+    snprintf(end_server->port, sizeof end_server->port, "%s", port + 1);
   }
 
   // uri
@@ -116,6 +157,7 @@ int send_request_end(int connfd, char *method, end_server_info *end_server) {
     // 헤더
     snprintf(send, sizeof send, "Host: %s:%s\r\n", end_server->host,
              end_server->port);
+
     Rio_writen(clientfd, send, strlen(send));
     snprintf(send, sizeof send, "%s", user_agent_hdr);
     Rio_writen(clientfd, send, strlen(send));
@@ -155,17 +197,27 @@ void send_response_client(int connfd, int clientfd) {
   }
 
   // 바디응답
-  long remain = content_length;
-  while (remain > 0) {
-    ssize_t read = (remain < (long)sizeof(recv_body))
-                       ? (ssize_t)remain
-                       : (ssize_t)sizeof(recv_body);
-    ssize_t n = Rio_readnb(&rio, recv_body, read);
-    if (n <= 0) {
-      break;
+  if (content_length >= 0) {
+
+    long remain = content_length;
+    while (remain > 0) {
+      ssize_t read = (remain < (long)sizeof(recv_body))
+                         ? (ssize_t)remain
+                         : (ssize_t)sizeof(recv_body);
+      ssize_t n = Rio_readnb(&rio, recv_body, read);
+      if (n <= 0) {
+        break;
+      }
+      Rio_writen(connfd, recv_body, n);
+      remain -= n;
     }
-    Rio_writen(connfd, recv_body, n);
-    remain -= n;
+  } else {
+    while (1) {
+      ssize_t n = Rio_readnb(&rio, recv_body, sizeof(recv_body));
+      if (n <= 0)
+        break;
+      Rio_writen(connfd, recv_body, n);
+    }
   }
 }
 
