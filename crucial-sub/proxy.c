@@ -25,8 +25,8 @@ static const char *user_agent_hdr =
 static int parse_uri_proxy(const char *uri, char *host, char *port, char *path);
 
 int main(int argc, char **argv) {
-  int listenfd, *connfd;
-  char hostname[MAXLINE], port[MAXLINE];
+  int listenfd, connfd;
+  char hostname[MAXLINE], port[6];
   socklen_t clientlen;
   struct sockaddr_storage clientaddr;
   pthread_t tid;
@@ -66,7 +66,7 @@ void *thread(void *vargp) {
 
 void doit(int fd) {
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
-  char host[MAXLINE], port[16], path[MAXLINE];
+  char host[MAXLINE], port[6], path[MAXLINE];
   char request_buf[MAXLINE];
   rio_t rio;
 
