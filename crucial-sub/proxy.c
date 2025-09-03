@@ -25,7 +25,7 @@ static int parse_uri_proxy(const char *uri, char *host, char *port, char *path);
 
 int main(int argc, char **argv) {
   int listenfd, connfd;
-  char hostname[MAXLINE], port[MAXLINE];
+  char hostname[MAXLINE], port[6];
   socklen_t clientlen;
   struct sockaddr_storage clientaddr;
   /* 인자가 2개(프로그램 이름, 포트 번호)인지 확인 */
