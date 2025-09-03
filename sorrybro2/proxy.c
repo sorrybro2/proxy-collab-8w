@@ -85,7 +85,7 @@ int main(int argc, char **argv) // 메인 함수 (argc = 인자개수, argv = �
 
     printf("Accepted connection from (%s, %s)\n", hostname, port); // 연결 정보 출력
     handle_request(connfd); // 요청 처리 함수 호출
-    close(connfd); // 클라이언트 연결 종료
+    Close(connfd); // 클라이언트 연결 종료
   }
   return 0; // 프로그램 정상 종료
 }
@@ -95,7 +95,7 @@ int main(int argc, char **argv) // 메인 함수 (argc = 인자개수, argv = �
  */
 void handle_request(int connfd) { // 클라이언트 소켓을 매개변수로 받음
   char buf[MAXLINE], method[MAXLINE], url[MAXLINE], version[MAXLINE]; // 요청 라인 파싱용 버퍼들
-  char host[MAXLINE], port[MAXLINE], path[MAXLINE]; // URL 파싱용 버퍼들
+  char host[MAXLINE], port[6], path[MAXLINE]; // URL 파싱용 버퍼들
   char headers[MAXLINE], host_header[MAXLINE];       // 헤더 저장용 버퍼들
   rio_t rio; // 요청 읽기용 버퍼 (rio_t 구조체)
   int serverfd; // 원서버와 연결된 소켓 디스크립터
@@ -175,7 +175,7 @@ int parse_url(char *url, char *host, char *port, char *path) { // URL 파싱 함
     }
 
     /* host에서 port 분리 */
-    char *colon_pos = strchr(host, ':'); // ':' 위치 찾기
+    char *colon_pos = strchr(host, ':'); // ':' 위치 찾기기
     if(colon_pos == NULL){ // :가 없으면
       // 포트가 없으면 기본값 80
       strcpy(port, "80");
